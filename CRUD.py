@@ -1,24 +1,28 @@
 import sqlite3
-import os
 
-db = os.path.abspath("db.db")
-connect = sqlite3.connect(db)
 
-conn = connect.cursor()
+def connect_db():
+    connect = sqlite3.connect("db.db")
+    return connect
 
-# def add_product(name,brand):
-#     conn.execute("""INSERT INTO products (name,brand)
-#                  VALUES (?,?)""",(name,brand))
-#     connect.commit()
+def dql(query):
+    cursor = connect_db().cursor()
+    select = cursor.execute(query)
+    sel = select.fetchall()
+    cursor.close()
+    return sel
 
-# add_product("nossa senhora","IPE")
-
-def listar_tabelas():
-    connect = sqlite3.connect(db)
+def crud(execute):
+    connect = connect_db()
     cursor = connect.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    print("Tabelas no banco:", cursor.fetchall())
-    connect.close()
+    cursor.execute(execute)
+    connect.commit()
+    cursor.close()
+    return
 
-listar_tabelas()
-connect.close()
+def get_columns(table):
+    connect = connect_db()
+    cursor = connect.cursor()
+    cursor.execute(f"PRAGMA table_info({table})")
+    colunas = [col[1] for col in cursor.fetchall()]
+    return tuple(colunas)
