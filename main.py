@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-
+from CRUD import *
 class Notebook(ttk.Notebook):
     def __init__(self, master=None):
         super().__init__(master)
@@ -11,12 +11,9 @@ class Notebook(ttk.Notebook):
         self.frames.append(frame)  
         self.add(frame, text=text)  
         
-# Classe para a janela principal (Root)
 class Root(tk.Tk):
     def __init__(self):
         super().__init__()
-
-        # Definindo a janela principal
         self.title("Inventory Management")
         window_width = self.winfo_screenwidth()
         window_height = self.winfo_screenheight()
@@ -34,25 +31,30 @@ class Root(tk.Tk):
         self.notebook.bind("<<NotebookTabChanged>>",self.popular)
         
     def create_tabs(self):
-        self.frame_products = FramesMain(self.notebook, ("ID_Product", "name", "brand"))
-        self.frame_movements = FramesMain(self.notebook, ("ID_moviment","Date","Movement_type","Product_ID","Quantity","Employee"))
-        self.frame_stock = FramesMain(self.notebook, ("Product ID","Name","Brande","Quantity"))
+        self.products = FramesMain(self.notebook, ("ID_Product", "Name", "Brand"),"products","#fcc668")
+        self.moviments = FramesMain(self.notebook, ("ID_moviment","Date","Movement_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
+        self.stock = FramesMain(self.notebook, ("Product ID","Name","Brand","Quantity"),'stock',"#befac4")
 
-        self.notebook.add_tabs(self.frame_products, "Products")
-        self.notebook.add_tabs(self.frame_movements, "Movements")
-        self.notebook.add_tabs(self.frame_stock, "Stock")
+        self.notebook.add_tabs(self.products, "Products")
+        self.notebook.add_tabs(self.moviments, "Movements")
+        self.notebook.add_tabs(self.stock, "Stock")
 
     def popular(self,event):
         id = self.notebook.select()
         frame = self.notebook.nametowidget(id)
         tree = frame.tree
         tree.delete(*tree.get_children())
+        sql_select = dql(f"SELECT * FROM {frame.name}")
+        for row in sql_select:
+            tree.insert("","end",values=row)
 
 class FramesMain(tk.Frame):
-    def __init__(self, master, columns):
+    def __init__(self, master, columns,name,bg):
         super().__init__(master)
+        self.name = name
         self.columns = columns
-        self.frame = tk.Frame(self, borderwidth=3, width=1280, height=670, relief="groove", bg="#ADD8E6")
+        self.bg = bg
+        self.frame = tk.Frame(self, borderwidth=3, width=1280, height=670, relief="groove", bg=bg)
         self.frame.place(relx=0, rely=1, anchor="sw")
         
         width_column = 600 // len(columns)
@@ -62,9 +64,39 @@ class FramesMain(tk.Frame):
             self.tree.column(column, width=width_column, anchor="center", minwidth=50)
             self.tree.heading(column, text=column, anchor="center")
         self.tree.place(x=10, y=10)
+        self.search_widgets()
+    
+    def search_widgets(self):
+
+        self.search_frame = tk.LabelFrame(self,bg=self.bg,relief="groove")
+        self.search_frame.place(x=940,y=80,anchor="center")
+
+        text = self.name.capitalize()
+        self.label_search = tk.Label(self.search_frame,text="Search",bg=self.bg,font=("Arial",15))
+        self.label_search.grid(row=0,column=0,columnspan=3,pady=2,sticky="n")
+
+        self.combobox_search = ttk.Combobox(self.search_frame,values=self.columns)
+        self.combobox_search.grid(row=1,column=0,padx=5)
+
+        self.entry_search = tk.Entry(self.search_frame,width=50)
+        self.entry_search.grid(row=1,column=1)
+
+        self.button_search = tk.Button(self.search_frame,text="Search",command=self.search_command)
+        self.button_search.grid(row=1,column=2,padx=5,pady=5)
+        
+        self.entry_search.bind("<Return>",lambda event: (self.search_command()))
+
+    def search_command(self):
+        like = self.entry_search.get()
+        column = self.combobox_search.get()
+        if column:
+            sql_consult = dql(f"SELECT * FROM {self.name} WHERE {column} LIKE '%{like}%'")
+            self.tree.delete(*self.tree.get_children())
+            for row in sql_consult:
+                self.tree.insert("","end",values=row)
 
 app = Root()
-app.mainloop()
+app.mainloop() 
 
 # def popular(event):
 #     global actual
