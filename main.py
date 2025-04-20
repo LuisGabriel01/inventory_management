@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from CRUD import *
+
 class Notebook(ttk.Notebook):
     def __init__(self, master=None):
         super().__init__(master)
@@ -29,11 +30,13 @@ class Root(tk.Tk):
         self.create_tabs()
 
         self.notebook.bind("<<NotebookTabChanged>>",self.popular)
+
+        self.notebook.select(self.moviments)
         
     def create_tabs(self):
-        self.products = FramesMain(self.notebook, ("ID_Product", "Name", "Brand"),"products","#fcc668")
-        self.moviments = FramesMain(self.notebook, ("ID_moviment","Date","Movement_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
-        self.stock = FramesMain(self.notebook, ("Product ID","Name","Brand","Quantity"),'stock',"#befac4")
+        self.products = Products(self.notebook, ("ID_Product", "Name", "Brand"),"products","#fcc668")
+        self.moviments = Moviments(self.notebook, ("ID_moviment","Date","Movement_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
+        self.stock = Stock(self.notebook, ("Product ID","Name","Brand","Quantity"),'stock',"#befac4")
 
         self.notebook.add_tabs(self.products, "Products")
         self.notebook.add_tabs(self.moviments, "Movements")
@@ -57,23 +60,30 @@ class FramesMain(tk.Frame):
         self.frame = tk.Frame(self, borderwidth=3, width=1280, height=670, relief="groove", bg=bg)
         self.frame.place(relx=0, rely=1, anchor="sw")
         
-        width_column = 600 // len(columns)
+        width_column = 600 // len(self.columns)
 
-        self.tree = ttk.Treeview(self.frame, columns=columns, show='headings', height=31)
-        for column in columns:
+        self.tree = ttk.Treeview(self.frame, columns=self.columns, show='headings', height=31)
+        for column in self.columns:
             self.tree.column(column, width=width_column, anchor="center", minwidth=50)
             self.tree.heading(column, text=column, anchor="center")
         self.tree.place(x=10, y=10)
         self.search_widgets()
     
     def search_widgets(self):
-
+        def search_command():
+            like = self.entry_search.get()
+            column = self.combobox_search.get()
+            if column:
+                sql_consult = dql(f"SELECT * FROM {self.name} WHERE {column} LIKE '%{like}%'")
+                self.tree.delete(*self.tree.get_children())
+                for row in sql_consult:
+                    self.tree.insert("","end",values=row)        
         self.search_frame = tk.LabelFrame(self,bg=self.bg,relief="groove")
         self.search_frame.place(x=940,y=80,anchor="center")
 
         text = self.name.capitalize()
-        self.label_search = tk.Label(self.search_frame,text="Search",bg=self.bg,font=("Arial",15))
-        self.label_search.grid(row=0,column=0,columnspan=3,pady=2,sticky="n")
+        self.search_text = tk.Label(self.search_frame,text="Search",bg=self.bg,font=("Arial",15))
+        self.search_text.grid(row=0,column=0,columnspan=3,pady=2,sticky="n")
 
         self.combobox_search = ttk.Combobox(self.search_frame,values=self.columns)
         self.combobox_search.grid(row=1,column=0,padx=5)
@@ -81,103 +91,104 @@ class FramesMain(tk.Frame):
         self.entry_search = tk.Entry(self.search_frame,width=50)
         self.entry_search.grid(row=1,column=1)
 
-        self.button_search = tk.Button(self.search_frame,text="Search",command=self.search_command)
+        self.button_search = tk.Button(self.search_frame,text="Search",command=search_command)
         self.button_search.grid(row=1,column=2,padx=5,pady=5)
         
-        self.entry_search.bind("<Return>",lambda event: (self.search_command()))
+        self.entry_search.bind("<Return>",lambda event: (search_command()))
 
-    def search_command(self):
-        like = self.entry_search.get()
-        column = self.combobox_search.get()
-        if column:
-            sql_consult = dql(f"SELECT * FROM {self.name} WHERE {column} LIKE '%{like}%'")
-            self.tree.delete(*self.tree.get_children())
-            for row in sql_consult:
-                self.tree.insert("","end",values=row)
+class Products(FramesMain):
+    def __init__(self,master,columns,name,bg):
+        super().__init__(master,columns,name,bg)
+
+class Moviments(FramesMain):
+    def __init__(self,master,columns,name,bg):
+        super().__init__(master,columns,name,bg)
+        self.register_moviment()
+
+    def register_moviment(self):
+        self.register_frame = tk.LabelFrame(self,bg="#a82c23",relief="groove",width=50,height=50)
+        self.register_frame.place(x=940,y=170,anchor="n")
+        self.register_frame.pack_propagate(False)
+
+        self.register_text = tk.Label(self.register_frame,text="Register Moviments",bg=self.bg)
+        self.register_text.grid(row=0,column=0,columnspan=2,pady=(0,20),sticky="n")
+
+        self.register_button = tk.Button(self.register_frame,text="Select",command=self.top_products)
+        self.register_button.grid(row=2,column=1)
+
+        self.register_info = tk.Label(self.register_frame)
+        self.register_info.grid(row=3,column=0)
+        
+    def top_products(self):
+
+        def popular_toptree():
+            self.top_tree.delete(*self.top_tree.get_children())
+            sqlconsult = dql("SELECT * FROM PRODUCTS")
+            for row in sqlconsult:
+                self.top_tree.insert("","end",values=row)
+
+        def search_products():
+            self.top_tree.delete(*self.top_tree.get_children())
+            text = self.top_entry.get()
+            column = self.top_combobox.get()
+            sqlconsult = dql(f"SELECT * FROM PRODUCTS WHERE {column} LIKE '%{text}%'")
+            for row in sqlconsult:
+                self.top_tree.insert("","end",values=row)
+        
+        def select_item(event):
+            try:
+                selected_item = self.top_tree.focus()
+                self.info_selected = self.top_tree.item(selected_item)['values']
+                id,name,brand = self.info_selected
+                self.top_info_select.config(text=f"Produto selecionado: \nID: {id},\nName: {name},\nBrand: {brand}")
+                self.register_info.config(text=f"Produto selecionado: \nID: {id},\nName: {name},\nBrand: {brand}")
+            except:
+                pass
+
+        self.top = tk.Toplevel()
+        self.top.geometry("600x600+1050+300")
+        self.top.grab_set()
+        self.top.resizable(height=False,width=False)
+
+        self.top_frame = tk.Frame(self.top,width=600,height=150,bg="#ad9e72")
+        self.top_frame.place(x=300,y=75,anchor="center")
+        columns = ("ID_Product","Name","Brand")
+
+        self.top_text = tk.Label(self.top_frame,text="Search for a product")
+        self.top_text.grid(row=0,column=0,columnspan=3,pady=2,sticky="n")
+
+        self.top_entry = tk.Entry(self.top_frame,width=30)
+        self.top_entry.grid(row=2,column=1)
+        self.top_entry.bind("<Return>",lambda event: search_products())
+
+        self.top_button_search = tk.Button(self.top_frame,text="Search",command=search_products)
+        self.top_button_search.grid(row=2,column=2,padx=5)
+        
+        self.top_button_confirm = tk.Button(self.top_frame,text="Confirm")
+        self.top_button_confirm.grid(row=4,column=0,columnspan=3)
+
+        self.top_combobox = ttk.Combobox(self.top_frame,values=("ID_Product","Name","Brand"))
+        self.top_combobox.set("Name")
+        self.top_combobox.grid(row=2,column=0,padx=5)
+
+        self.top_info_select = tk.Label(self.top_frame,text="Produto Selecionado: Nenhum",justify="left")
+        self.top_info_select.grid(row=3,column=0,columnspan=3,pady=5)
+
+        self.top_tree_frame = tk.Frame(self.top)
+        self.top_tree_frame.place(x=300,y=150,anchor="n")
+        self.top_tree = ttk.Treeview(self.top_tree_frame, columns=columns, show='headings', height=31)
+        for i in columns:
+            self.top_tree.column(i,anchor="center",width=200)
+            self.top_tree.heading(i,text=i,anchor="center")
+        self.top_tree.grid(row=0,column=0)
+        self.top_tree.bind('<<TreeviewSelect>>',select_item)
+
+        popular_toptree()
+
+class Stock(FramesMain):
+    def __init__(self,master,columns,name,bg):
+        super().__init__(master,columns,name,bg)
+        
 
 app = Root()
 app.mainloop() 
-
-# def popular(event):
-#     global actual
-#     tab_id = event.widget.select()
-#     tab_info = event.widget.tab(tab_id)
-#     sql_consult = dql(f"SELECT * FROM {tab_info['text']}")
-#     frame = event.widget.nametowidget(tab_id)
-#     tree = None
-#     for i in frame.winfo_children():
-#         if isinstance(i,ttk.Treeview):
-#             tree = i
-#             break
-#     if tree:
-#         tree.delete(*tree.get_children())
-#     for row in sql_consult:
-#         tree.insert("","end",values=row)
-#     current_tab_id = notebook.select()
-#     actual = notebook.nametowidget(current_tab_id)
-
-# def search():
-    
-
-# # Creating the window
-# root = tk.Tk()
-# root.title("Inventory Managament")
-# window_width = root.winfo_screenwidth()
-# window_height = root.winfo_screenheight()
-# root_largura = 1280
-# root_altura = 720
-# pos_y = (window_height - root_altura)//2
-# pos_x = (window_width - root_largura)//2
-# root.geometry(f"{root_largura}x{root_altura}+{pos_x}+{pos_y}")
-# root.resizable(width=False,height=False)\
-
-# #Notebook
-# notebook = ttk.Notebook(root)
-# notebook.pack()
-# notebook.bind("<<NotebookTabChanged>>",popular)
-
-# #Frame Products
-# products = tk.Frame(notebook, borderwidth=3,width=1280, height=670, relief="groove",bg="#ADD8E6")
-# products.place(relx=0, rely=1, anchor="sw")
-# columns_products = ("ID_product","name","brande")
-# tr_products = ttk.Treeview(products,columns=columns_products,show='headings',height=31)
-# for i in columns_products:
-#     tr_products.column(i,width=200,anchor="center",minwidth=50)
-#     tr_products.heading(i,text=i,anchor="center")
-# tr_products.place(x=10,y=10)
-# # button_search = tk.Entry(products)
-# # button_search.place(x=600,y=50)
-
-# #Frame Movements
-# moviments = tk.Frame(notebook, borderwidth=2,width=1280, height=670, relief="groove",bg="#90EE90")
-# columns = get_columns("moviments")
-# tr_moviments = ttk.Treeview(moviments,columns=columns,show='headings',height=31)
-# for i in columns:
-#     tr_moviments.column(i,width=100,anchor="center",minwidth=50)
-#     tr_moviments.heading(i,text=i,anchor="center")
-# tr_moviments.place(x=10,y=10)
-
-# #Frame Stock
-# stock = tk.Frame(notebook, borderwidth=4,width=1280, height=670, relief="groove",bg="#F5DEB3")
-# columns_stock = get_columns("stock")
-# tr_stock = ttk.Treeview(stock,columns=columns_stock,show='headings',height=31)
-# for i in columns_stock:
-#     tr_stock.column(i,width=150,anchor="center",minwidth=50)
-#     tr_stock.heading(i,text=i,anchor="center")
-# tr_stock.place(x=10,y=10)
-# entry_search = tk.Entry(stock,width=40)
-# entry_search.place(x=940,y=50,anchor="center")
-# button_search = tk.Button(text="Nuossa")
-# button_search.place(x=1060,y=77,anchor="w")
-
-
-# frames_dict = {stock:"stock",moviments:"moviments",products:"products"} 
-# for i,y in frames_dict.items():
-#     notebook.add(i,text=f"{y}")
-
-
-
-
-# root.mainloop()
-
-
