@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import ttkbootstrap as tb
+from tkinter import messagebox
 from CRUD import *
 
 class Notebook(ttk.Notebook):
@@ -35,11 +37,11 @@ class Root(tk.Tk):
         
     def create_tabs(self):
         self.products = Products(self.notebook, ("ID_Product", "Name", "Brand"),"products","#fcc668")
-        self.moviments = Moviments(self.notebook, ("ID_moviment","Date","Movement_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
+        self.moviments = Moviments(self.notebook, ("ID_moviment","Date","Moviment_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
         self.stock = Stock(self.notebook, ("Product ID","Name","Brand","Quantity"),'stock',"#befac4")
 
         self.notebook.add_tabs(self.products, "Products")
-        self.notebook.add_tabs(self.moviments, "Movements")
+        self.notebook.add_tabs(self.moviments, "Moviments")
         self.notebook.add_tabs(self.stock, "Stock")
 
     def popular(self,event):
@@ -106,19 +108,22 @@ class Moviments(FramesMain):
         self.register_moviment()
 
     def register_moviment(self):
-        self.register_frame = tk.LabelFrame(self,bg="#a82c23",relief="groove",width=50,height=50)
-        self.register_frame.place(x=940,y=170,anchor="n")
+        self.register_frame = tk.LabelFrame(self,bg=self.bg,relief="groove")
+        self.register_frame.place(x=940,y=170,anchor="n",width=530,height=200)
         self.register_frame.pack_propagate(False)
+        self.register_frame.grid_columnconfigure(0,weight=1)
 
-        self.register_text = tk.Label(self.register_frame,text="Register Moviments",bg=self.bg)
-        self.register_text.grid(row=0,column=0,columnspan=2,pady=(0,20),sticky="n")
+        self.register_text = tk.Label(self.register_frame,text="Register Moviments",bg=self.bg,font=("Arial",16,"bold"))
+        self.register_text.grid(row=0,column=0,pady=(0,20),sticky="n")
 
         self.register_button = tk.Button(self.register_frame,text="Select",command=self.top_products)
-        self.register_button.grid(row=2,column=1)
+        self.register_button.grid(row=2,column=0,pady=(0,20))
 
-        self.register_info = tk.Label(self.register_frame)
+        self.register_info = tk.Label(self.register_frame,bg=self.bg,relief="groove")
         self.register_info.grid(row=3,column=0)
         
+        self.register_dateentry = tb.DateEntry(self.register_frame)
+        self.register_dateentry.grid(row=4,column=0)
     def top_products(self):
 
         def popular_toptree():
@@ -140,11 +145,18 @@ class Moviments(FramesMain):
                 selected_item = self.top_tree.focus()
                 self.info_selected = self.top_tree.item(selected_item)['values']
                 id,name,brand = self.info_selected
-                self.top_info_select.config(text=f"Produto selecionado: \nID: {id},\nName: {name},\nBrand: {brand}")
-                self.register_info.config(text=f"Produto selecionado: \nID: {id},\nName: {name},\nBrand: {brand}")
+                self.text_selected = f"Produto selecionado: \nID: {id},\nName: {name},\nBrand: {brand}"
+                self.top_info_select.config(text=self.text_selected)
             except:
                 pass
-
+        
+        def select_confirm():
+            try:
+                self.register_info.config(text=self.text_selected)
+                self.top.destroy()
+            except:
+                messagebox.showinfo("Invalid Product","Please select a product to record the transaction")
+        
         self.top = tk.Toplevel()
         self.top.geometry("600x600+1050+300")
         self.top.grab_set()
@@ -164,7 +176,7 @@ class Moviments(FramesMain):
         self.top_button_search = tk.Button(self.top_frame,text="Search",command=search_products)
         self.top_button_search.grid(row=2,column=2,padx=5)
         
-        self.top_button_confirm = tk.Button(self.top_frame,text="Confirm")
+        self.top_button_confirm = tk.Button(self.top_frame,text="Confirm",command=select_confirm)
         self.top_button_confirm.grid(row=4,column=0,columnspan=3)
 
         self.top_combobox = ttk.Combobox(self.top_frame,values=("ID_Product","Name","Brand"))
