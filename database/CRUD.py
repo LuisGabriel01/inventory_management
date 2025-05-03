@@ -12,7 +12,7 @@ def dql(query):
     cursor.close()
     return sel
 
-def crud(execute):
+def dml(execute):
     connect = connect_db()
     cursor = connect.cursor()
     cursor.execute(execute)
