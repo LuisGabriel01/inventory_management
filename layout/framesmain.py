@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from database.CRUD import *
+from tkinter import messagebox
 
 class FramesMain(tk.Frame):
     def __init__(self, master, columns,name,bg):
@@ -8,22 +9,11 @@ class FramesMain(tk.Frame):
         self.name = name
         self.columns = columns
         self.bg = bg
-        self.frame = tk.Frame(self, borderwidth=3, width=1280, height=670, relief="groove")
-        self.frame.place(relx=0, rely=1, anchor="sw")
-        
-        width_column = 600 // len(self.columns)
-
-        self.tree = ttk.Treeview(self.frame, columns=self.columns, show='headings', height=40)
-        for column in self.columns:
-            self.tree.column(column, width=width_column, anchor="center", minwidth=50)
-            self.tree.heading(column, text=column, anchor="center")
-        self.tree.place(x=10, y=10)
-        self.search_widgets()
-        self.popular()
-
+        # self.frame = tk.Frame(self, borderwidth=3, width=1280, height=670, relief="groove")
+        # self.frame.place(relx=0, rely=1, anchor="sw")
         
         self.center_frame = tk.LabelFrame(self,bg=self.bg,relief="groove")
-        self.center_frame.place(x=940,y=350,anchor="center",width=530,height=400)
+        self.center_frame.place(x=940,y=140,anchor="n",width=530,height=400)
         self.center_frame.grid_columnconfigure(0,weight=1)
 
         self.center_text = tk.Label(self.center_frame,text="Text",bg=self.bg,font=("Arial",16,"bold"))
@@ -31,6 +21,9 @@ class FramesMain(tk.Frame):
 
         self.center_button = tk.Button(self.center_frame,text="Text")
         self.center_button.grid(row=2,column=0,pady=(35,0))
+
+        self.search_widgets()
+        self.treeview()
 
     def search_widgets(self):
         def search_command():
@@ -64,3 +57,44 @@ class FramesMain(tk.Frame):
         sql_select = dql(f"SELECT * FROM {self.name}")
         for row in sql_select:
             self.tree.insert("","end",values=row)
+
+    def treeview(self):
+        def right_click(event):
+            item_id = self.tree.identify_row(event.y)
+            item = self.tree.item(item_id)
+            if item_id:
+                self.tree.selection_set(item_id)
+                menu.post(event.x_root, event.y_root)
+
+        def delete_item():
+            id = self.tree.item(self.tree.selection())["values"][0]
+            if self.name == "products":
+                search = dql(f"""SELECT * FROM movements
+                            WHERE product_ID == {id}""")
+            else:
+                search = 0
+                
+            if search:
+                resposta = messagebox.askyesno("Confirmação","Tem certeza que deseja excluir o item?\n\n*Ele tem movimentações associadas.*")
+            else:
+                resposta = messagebox.askyesno("Confirmação","Tem certeza que deseja excluir o item?")
+
+            if resposta:
+                dml(f"""DELETE FROM {self.name}
+                    WHERE {self.columns[0]} == {id}""")
+                self.popular()
+            else:
+                pass
+
+        width_column = 600 // len(self.columns)
+        self.tree = ttk.Treeview(self, columns=self.columns, show='headings', height=45)
+        for column in self.columns:
+            self.tree.column(column, width=width_column, anchor="center", minwidth=50)
+            self.tree.heading(column, text=column, anchor="center")
+        self.tree.grid(row=0,column=0,sticky="nsew")
+        self.popular()
+        self.tree.bind("<Button-3>", right_click)
+    
+        menu = tk.Menu(self, tearoff=0)
+        menu.add_command(label="Delete", command=delete_item)
+

@@ -1,5 +1,5 @@
 from layout.products import *
-from layout.moviments import *
+from layout.movements import *
 from layout.stock import *
 
 
@@ -10,7 +10,7 @@ class Notebook(ttk.Notebook):
         self.pack(fill="both", expand=True)
         self.create_tabs()
         self.bind("<<NotebookTabChanged>>",self.popular_notebook)
-        self.select(self.moviments)
+        self.select(self.movements)
 
     def add_tabs(self, frame, text):
         self.frames.append(frame)  
@@ -18,10 +18,10 @@ class Notebook(ttk.Notebook):
         
     def create_tabs(self):
         self.products = Products(self, ("ID_Product", "Name", "Brand"),"products","#fcc668")
-        self.moviments = Moviments(self, ("ID_moviment","Date","Moviment_type","Product_ID","Quantity","Employee"),'moviments',"#8bbcf0")
+        self.movements = Movements(self, ("ID_movement","Date","Movement_type","Product_ID","Quantity","Employee"),'movements',"#8bbcf0")
         self.stock = Stock(self, ("Product ID","Name","Brand","Quantity"),'stock',"#befac4")
         self.add_tabs(self.products, "Products")
-        self.add_tabs(self.moviments, "Moviments")
+        self.add_tabs(self.movements, "Movements")
         self.add_tabs(self.stock, "Stock")
 
     def popular_notebook(self,event=None):

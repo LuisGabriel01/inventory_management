@@ -2,7 +2,7 @@ import sqlite3
 
 
 def connect_db():
-    connect = sqlite3.connect("db.db")
+    connect = sqlite3.connect("database\\db.db")
     return connect
 
 def dql(query):
@@ -10,7 +10,7 @@ def dql(query):
     select = cursor.execute(query)
     sel = select.fetchall()
     cursor.close()
-    return sel
+    return list(sel)
 
 def dml(execute):
     connect = connect_db()

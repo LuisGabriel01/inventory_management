@@ -1,37 +1,42 @@
 from layout.framesmain import *
 from ttkbootstrap.widgets import DateEntry
-from tkinter import messagebox
 
-class Moviments(FramesMain):
+
+class Movements(FramesMain):
     def __init__(self,master,columns,name,bg):
         super().__init__(master,columns,name,bg)
-        self.register_moviment()
+        self.register_movement()
         self.center_button.config(text="Select Product",command=self.top_products)
         self.search_button = self.center_button
         del self.center_button
-        self.center_text.config(text="Register Moviment")
+        self.center_text.config(text="Register Movement")
+        self.combobox_search.set("Product_ID")
 
-    def register_moviment(self):
-        def insert_moviment():
-            date = self.register_dateentry.entry.get()
-            product_id = self.id_product
-            quantity = self.register_quantity_entry.get()
-            employee = str(self.register_employee_entry.get())
-            moviment_type = self.register_moviment_type_combobox.get()
-            moviment_type = 1 if moviment_type == "Entry" else 0
-            messagebox.askyesno("Confirmação","Are you sure about that?")
-            dml(f"""
-            INSERT INTO moviments (date,moviment_type,product_ID,quantity,employee)
-            VALUES ('{date}',{moviment_type},{product_id},{quantity},'{employee}')
-            """)
+    def register_movement(self):
+        def insert_movement():
+            try:
+                date = self.register_dateentry.entry.get()
+                product_id = self.id_product
+                quantity = self.register_quantity_entry.get()
+                employee = str(self.register_employee_entry.get())
+                movement_type = self.register_movement_type_combobox.get()
+                movement_type = 1 if movement_type == "Entry" else 0
+                messagebox.askyesno("Confirmação","Deseja registrar essa movimentação?")
+                dml(f"""
+                INSERT INTO movements (date,movement_type,product_ID,quantity,employee)
+                VALUES ('{date}',{movement_type},{product_id},{quantity},'{employee}')
+                """)
+            except:
+                messagebox.showerror("Erro","Selecione o produto e insira os detalhes")
+
 
             self.popular()
 
-        self.id_info = tk.Label(self.center_frame,text="id:")
+        self.id_info = tk.Label(self.center_frame,text="Id:")
         self.id_info.grid(row=3,column=0,sticky="w",padx=100,pady=(20,0))
-        self.name_info = tk.Label(self.center_frame,text="name:")
+        self.name_info = tk.Label(self.center_frame,text="Name:")
         self.name_info.grid(row=4,column=0,sticky="w",padx=100)
-        self.brand_info = tk.Label(self.center_frame,text="brand:")
+        self.brand_info = tk.Label(self.center_frame,text="Brand:")
         self.brand_info.grid(row=5,column=0,sticky="w",padx=100,pady=(0,20))
 
 
@@ -40,7 +45,7 @@ class Moviments(FramesMain):
         self.register_entrys_frames.grid(row=6,column=0,sticky="w",padx=100,pady=(0,20))
 
         self.register_dateentry = DateEntry(self.center_frame,bootstyle='secondary')
-        self.register_dateentry.grid(row=7,column=0,padx=0,pady=(0,20))
+        self.register_dateentry.grid(row=7,column=0,pady=(0,20))
 
         self.register_quantity_text = tk.Label(self.register_entrys_frames,text="Quantity")
         self.register_quantity_text.grid(row=1,column=0,sticky="w")
@@ -52,12 +57,12 @@ class Moviments(FramesMain):
         self.register_employee_entry = tk.Entry(self.register_entrys_frames)
         self.register_employee_entry.grid(row=2,column=1)
 
-        self.register_moviment_typetext = tk.Label(self.register_entrys_frames,text="Moviment Type")
-        self.register_moviment_typetext.grid(row=3,column=0,sticky="w")
-        self.register_moviment_type_combobox = ttk.Combobox(self.register_entrys_frames,values=["Entry","saída"])
-        self.register_moviment_type_combobox.grid(row=3,column=1)
+        self.register_movement_typetext = tk.Label(self.register_entrys_frames,text="Movement Type")
+        self.register_movement_typetext.grid(row=3,column=0,sticky="w")
+        self.register_movement_type_combobox = ttk.Combobox(self.register_entrys_frames,values=["Entry","saída"],width=17)
+        self.register_movement_type_combobox.grid(row=3,column=1)
 
-        self.register_button = tk.Button(self.center_frame,text="Register Moviment",command=insert_moviment,height=2,anchor="center")
+        self.register_button = tk.Button(self.center_frame,text="Register Movement",command=insert_movement,height=2,anchor="center")
         self.register_button.grid(row=8,column=0,pady=(20,0))
 
     def top_products(self):
@@ -131,3 +136,9 @@ class Moviments(FramesMain):
         self.top_tree.bind('<<TreeviewSelect>>',select_item)
 
         popular_toptree()
+    
+    def popular(self,event=None):
+        self.tree.delete(*self.tree.get_children())
+        sql_select = dql(f"SELECT * FROM {self.name}")
+        for row in sql_select: 
+            self.tree.insert("","end",values=row)
